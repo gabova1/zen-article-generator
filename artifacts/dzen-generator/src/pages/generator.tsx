@@ -20,7 +20,7 @@ const formSchema = z.object({
   category: z.string().min(1, "Выберите категорию"),
   articleType: z.string().min(1, "Выберите тип статьи"),
   keywords: z.array(z.string()).default([]),
-  productUrl: z.string().url("Введите корректный URL").optional().or(z.literal("")),
+  productUrls: z.array(z.string()).default([]),
   targetAudience: z.string().optional(),
   tone: z.string().optional(),
   length: z.string().optional(),
@@ -75,6 +75,7 @@ export default function GeneratorPage() {
   const queryClient = useQueryClient();
   const [article, setArticle] = useState<GeneratedArticle | null>(null);
   const [keywordInput, setKeywordInput] = useState("");
+  const [productUrlInput, setProductUrlInput] = useState("");
   const [copiedContent, setCopiedContent] = useState<string | null>(null);
 
   const mutation = useGenerateArticle({
@@ -99,7 +100,7 @@ export default function GeneratorPage() {
       category: "",
       articleType: "",
       keywords: [],
-      productUrl: "",
+      productUrls: [],
       targetAudience: "",
       tone: "friendly",
       length: "medium",
@@ -107,6 +108,7 @@ export default function GeneratorPage() {
   });
 
   const keywords = form.watch("keywords");
+  const productUrls = form.watch("productUrls");
 
   const addKeyword = () => {
     const kw = keywordInput.trim();
@@ -120,6 +122,23 @@ export default function GeneratorPage() {
     form.setValue("keywords", keywords.filter((k) => k !== kw));
   };
 
+  const addProductUrl = () => {
+    const url = productUrlInput.trim();
+    if (url && !productUrls.includes(url)) {
+      try {
+        new URL(url);
+        form.setValue("productUrls", [...productUrls, url]);
+        setProductUrlInput("");
+      } catch {
+        toast({ title: "Ошибка", description: "Введите корректный URL", variant: "destructive" });
+      }
+    }
+  };
+
+  const removeProductUrl = (url: string) => {
+    form.setValue("productUrls", productUrls.filter((u) => u !== url));
+  };
+
   const onSubmit = (values: FormValues) => {
     mutation.mutate({
       data: {
@@ -127,7 +146,7 @@ export default function GeneratorPage() {
         category: values.category,
         articleType: values.articleType as "review" | "guide" | "listicle" | "news" | "opinion",
         keywords: values.keywords,
-        productUrl: values.productUrl || undefined,
+        productUrl: values.productUrls.length > 0 ? values.productUrls[0] : undefined,
         targetAudience: values.targetAudience || undefined,
         tone: (values.tone as "formal" | "casual" | "expert" | "friendly") || undefined,
         length: (values.length as "short" | "medium" | "long") || undefined,
@@ -284,18 +303,36 @@ export default function GeneratorPage() {
 
                 <FormField
                   control={form.control}
-                  name="productUrl"
-                  render={({ field }) => (
+                  name="productUrls"
+                  render={() => (
                     <FormItem>
-                      <FormLabel>Ссылка на товар</FormLabel>
-                      <FormControl>
+                      <FormLabel>Ссылки на товары</FormLabel>
+                      <div className="flex gap-2">
                         <Input
                           data-testid="input-product-url"
+                          value={productUrlInput}
+                          onChange={(e) => setProductUrlInput(e.target.value)}
                           placeholder="https://..."
-                          {...field}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); addProductUrl(); }
+                          }}
                         />
-                      </FormControl>
-                      <FormMessage />
+                        <Button type="button" variant="outline" size="icon" onClick={addProductUrl} data-testid="button-add-url">
+                          <Tag className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {productUrls.length > 0 && (
+                        <div className="flex flex-col gap-1.5 mt-2">
+                          {productUrls.map((url) => (
+                            <Badge key={url} variant="secondary" className="text-xs gap-1 justify-between" data-testid={`tag-url-${url}`}>
+                              <span className="truncate max-w-[250px]">{url}</span>
+                              <button type="button" onClick={() => removeProductUrl(url)}>
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </FormItem>
                   )}
                 />
