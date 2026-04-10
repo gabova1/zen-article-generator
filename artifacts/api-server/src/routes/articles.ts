@@ -27,7 +27,10 @@ router.post("/articles/generate", async (req, res): Promise<void> => {
   }
 
   try {
-    const generated = await generateDzenArticle(parsed.data);
+    const generated = await generateDzenArticle({
+      ...parsed.data,
+      imageCount: parsed.data.imageCount ?? 3,
+    });
 
     const [saved] = await db
       .insert(articlesTable)
