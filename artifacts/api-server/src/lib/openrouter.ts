@@ -16,21 +16,23 @@ interface OpenRouterResponse {
   }>;
 }
 
-export async function callOpenRouter(
-  messages: OpenRouterMessage[],
-  model = "meta-llama/llama-4-maverick:free"
-): Promise<string> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not set");
-  }
+const FREE_MODELS = [
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "openai/gpt-oss-120b:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "google/gemma-3-27b-it:free",
+  "google/gemma-3-12b-it:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+];
 
+async function tryModel(messages: OpenRouterMessage[], model: string): Promise<string> {
   const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "https://dzen-generator.replit.app",
-      "X-Title": "Яндекс Дзен Генератор",
+      "X-Title": "Yandex Dzen Generator",
     },
     body: JSON.stringify({
       model,
@@ -42,17 +44,38 @@ export async function callOpenRouter(
 
   if (!response.ok) {
     const errorText = await response.text();
-    logger.error({ status: response.status, error: errorText }, "OpenRouter API error");
-    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    logger.warn({ status: response.status, model, error: errorText }, "Model failed, trying next");
+    throw new Error(`Model ${model} failed: ${response.status}`);
   }
 
   const data = await response.json() as OpenRouterResponse;
-
   if (!data.choices?.[0]?.message?.content) {
-    throw new Error("No content in OpenRouter response");
+    throw new Error(`No content from model ${model}`);
   }
 
+  logger.info({ model }, "Article generated successfully");
   return data.choices[0].message.content;
+}
+
+export async function callOpenRouter(
+  messages: OpenRouterMessage[],
+  model?: string
+): Promise<string> {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not set");
+  }
+
+  const modelsToTry = model ? [model] : FREE_MODELS;
+
+  for (const m of modelsToTry) {
+    try {
+      return await tryModel(messages, m);
+    } catch (err) {
+      logger.warn({ model: m, err }, "Falling back to next model");
+    }
+  }
+
+  throw new Error("All models failed to generate content");
 }
 
 export interface GenerateArticleOptions {
