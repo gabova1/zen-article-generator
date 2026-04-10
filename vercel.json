@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd artifacts/dzen-generator && pnpm install && pnpm run build",
+  "outputDirectory": "artifacts/dzen-generator/dist/public",
+  "devCommand": "cd artifacts/dzen-generator && pnpm run dev",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "env": {
+    "PORT": "3000",
+    "BASE_PATH": "/"
+  }
+}
