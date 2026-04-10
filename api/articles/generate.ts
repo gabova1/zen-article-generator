@@ -1,32 +1,116 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Используем бесплатный API Hugging Face
-const HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
-const HF_API_KEY = "hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // Публичный inference API не требует ключ
+// Простая генерация статьи без внешних API - используем шаблоны
+function generateArticleFromTemplate(params: any): any {
+  const { topic, category, keywords = [], articleType, imageCount = 3, tone = 'friendly', length = 'medium', targetAudience, productUrl } = params;
 
-async function generateWithHuggingFace(prompt: string): Promise<string> {
-  const response = await fetch(HF_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      inputs: prompt,
-      parameters: {
-        max_new_tokens: 2000,
-        temperature: 0.7,
-        top_p: 0.95,
-        return_full_text: false,
-      },
-    }),
-  });
+  const toneMap: Record<string, string> = {
+    friendly: 'дружелюбный',
+    formal: 'формальный',
+    expert: 'экспертный',
+    casual: 'неформальный',
+  };
 
-  if (!response.ok) {
-    throw new Error(`HuggingFace API failed: ${response.status}`);
+  const typeMap: Record<string, string> = {
+    review: 'Обзор',
+    guide: 'Руководство',
+    listicle: 'Топ',
+    news: 'Новость',
+    opinion: 'Мнение',
+  };
+
+  // Генерируем заголовок
+  const title = `${typeMap[articleType] || 'Статья'}: ${topic}`;
+  const seoTitle = title.length > 60 ? title.slice(0, 57) + '...' : title;
+  const metaDescription = `${title}. Подробная информация о ${topic.toLowerCase()}. Читайте на Яндекс Дзен.`;
+  const excerpt = `В этой статье мы подробно рассмотрим ${topic.toLowerCase()}. Вы узнаете все самое важное и интересное по этой теме.`;
+
+  // Генерируем контент
+  let content = `<h2>Введение</h2>
+<p>Сегодня мы поговорим о ${topic.toLowerCase()}. Эта тема интересует многих, и мы постараемся раскрыть её максимально подробно.</p>
+
+<h2>Основная информация</h2>
+<p>${topic} — это важная тема, которая заслуживает внимания. Давайте разберемся в деталях.</p>`;
+
+  if (keywords.length > 0) {
+    content += `\n\n<h2>Ключевые моменты</h2>
+<ul>`;
+    keywords.slice(0, 5).forEach((kw: string) => {
+      content += `\n<li><strong>${kw}</strong> — важный аспект темы ${topic.toLowerCase()}</li>`;
+    });
+    content += `\n</ul>`;
   }
 
-  const data = await response.json();
-  return data[0]?.generated_text || "";
+  if (articleType === 'listicle') {
+    content += `\n\n<h2>Топ-5 фактов о ${topic}</h2>
+<ol>
+<li><strong>Первый факт:</strong> ${topic} имеет долгую историю и богатые традиции.</li>
+<li><strong>Второй факт:</strong> Многие эксперты считают ${topic.toLowerCase()} одним из ключевых направлений.</li>
+<li><strong>Третий факт:</strong> ${topic} постоянно развивается и совершенствуется.</li>
+<li><strong>Четвертый факт:</strong> Существует множество подходов к ${topic.toLowerCase()}.</li>
+<li><strong>Пятый факт:</strong> ${topic} становится всё более популярным.</li>
+</ol>`;
+  }
+
+  if (articleType === 'guide') {
+    content += `\n\n<h2>Пошаговое руководство</h2>
+<h3>Шаг 1: Подготовка</h3>
+<p>Прежде чем начать работу с ${topic.toLowerCase()}, важно правильно подготовиться.</p>
+
+<h3>Шаг 2: Основные действия</h3>
+<p>Теперь переходим к основным действиям. Следуйте инструкциям внимательно.</p>
+
+<h3>Шаг 3: Завершение</h3>
+<p>На финальном этапе убедитесь, что всё сделано правильно.</p>`;
+  }
+
+  if (articleType === 'review') {
+    content += `\n\n<h2>Преимущества</h2>
+<ul>
+<li>Высокое качество</li>
+<li>Удобство использования</li>
+<li>Доступная цена</li>
+<li>Надежность</li>
+</ul>
+
+<h2>Недостатки</h2>
+<ul>
+<li>Требует времени на освоение</li>
+<li>Не всегда доступно</li>
+</ul>`;
+  }
+
+  if (targetAudience) {
+    content += `\n\n<h2>Для кого это подходит</h2>
+<p>Эта информация будет особенно полезна для ${targetAudience}.</p>`;
+  }
+
+  if (productUrl) {
+    content += `\n\n<h2>Где приобрести</h2>
+<p>Вы можете узнать больше и приобрести по <a href="${productUrl}" target="_blank" rel="noopener">этой ссылке</a>.</p>`;
+  }
+
+  content += `\n\n<h2>Заключение</h2>
+<p>Надеемся, эта статья помогла вам лучше понять ${topic.toLowerCase()}. Если у вас остались вопросы — пишите в комментариях!</p>
+
+<p><strong>Подписывайтесь на наш канал, чтобы не пропустить новые материалы!</strong></p>`;
+
+  // Генерируем описания изображений
+  const imageDescriptions: string[] = [];
+  if (imageCount > 0) {
+    for (let i = 0; i < Math.min(imageCount, 5); i++) {
+      imageDescriptions.push(`${topic} illustration ${i + 1}, professional photo, high quality`);
+    }
+  }
+
+  return {
+    title,
+    seoTitle,
+    metaDescription,
+    excerpt,
+    content,
+    imageDescriptions,
+  };
 }
 
 function buildImageUrl(description: string, seed: number): string {
@@ -78,95 +162,31 @@ function injectImagesIntoContent(html: string, imageDescriptions: string[]): str
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Добавляем CORS заголовки
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { topic, category, keywords = [], articleType, imageCount = 3, tone = 'friendly', length = 'medium', targetAudience, productUrl } = req.body;
+    const params = req.body;
 
-    const toneMap: Record<string, string> = {
-      friendly: 'дружелюбный',
-      formal: 'формальный',
-      expert: 'экспертный',
-      casual: 'неформальный',
-    };
-
-    const typeMap: Record<string, string> = {
-      review: 'обзор',
-      guide: 'руководство',
-      listicle: 'список',
-      news: 'новость',
-      opinion: 'мнение',
-    };
-
-    const lengthMap: Record<string, string> = {
-      short: '800-1200 слов',
-      medium: '1500-2500 слов',
-      long: '3000-5000 слов',
-    };
-
-    const prompt = `Напиши ${typeMap[articleType] || articleType} для Яндекс Дзен на тему: "${topic}"
-
-Категория: ${category}
-Тон: ${toneMap[tone] || tone}
-Объём: ${lengthMap[length] || 'средний'}
-${keywords.length > 0 ? `Ключевые слова: ${keywords.join(', ')}` : ''}
-${targetAudience ? `Целевая аудитория: ${targetAudience}` : ''}
-${productUrl ? `Включи ссылку на продукт: ${productUrl}` : ''}
-
-Создай статью в следующем формате:
-
-ЗАГОЛОВОК: [Цепляющий заголовок]
-
-SEO_ЗАГОЛОВОК: [SEO заголовок до 60 символов]
-
-МЕТА_ОПИСАНИЕ: [Мета-описание 120-160 символов]
-
-ВСТУПЛЕНИЕ: [Краткое вступление 2-3 предложения]
-
-КОНТЕНТ:
-<h2>Первый раздел</h2>
-<p>Текст первого раздела...</p>
-
-<h2>Второй раздел</h2>
-<p>Текст второго раздела...</p>
-
-<h2>Третий раздел</h2>
-<p>Текст третьего раздела...</p>
-
-<h2>Заключение</h2>
-<p>Призыв к действию...</p>
-
-${imageCount > 0 ? `ИЗОБРАЖЕНИЯ: [${imageCount} описаний на английском через запятую]` : ''}
-
-Используй HTML теги: h2, h3, p, ul, ol, li, strong, em, blockquote, a.`;
-
-    const generated = await generateWithHuggingFace(prompt);
-
-    // Парсим ответ
-    const titleMatch = generated.match(/ЗАГОЛОВОК:\s*(.+?)(?:\n|$)/i);
-    const seoTitleMatch = generated.match(/SEO_ЗАГОЛОВОК:\s*(.+?)(?:\n|$)/i);
-    const metaMatch = generated.match(/МЕТА_ОПИСАНИЕ:\s*(.+?)(?:\n|$)/i);
-    const excerptMatch = generated.match(/ВСТУПЛЕНИЕ:\s*(.+?)(?:\n\n|КОНТЕНТ:)/is);
-    const contentMatch = generated.match(/КОНТЕНТ:\s*(.+?)(?:\n\nИЗОБРАЖЕНИЯ:|$)/is);
-    const imagesMatch = generated.match(/ИЗОБРАЖЕНИЯ:\s*\[(.+?)\]/i);
-
-    const title = titleMatch?.[1]?.trim() || topic;
-    const seoTitle = seoTitleMatch?.[1]?.trim() || title.slice(0, 60);
-    const metaDescription = metaMatch?.[1]?.trim() || `${title}. Читайте на Яндекс Дзен.`;
-    const excerpt = excerptMatch?.[1]?.trim() || `Статья на тему: ${topic}`;
-    let content = contentMatch?.[1]?.trim() || `<h2>Введение</h2><p>${topic}</p>`;
-
-    const imageDescriptions = imagesMatch?.[1]
-      ? imagesMatch[1].split(',').map(s => s.trim()).filter(Boolean).slice(0, imageCount)
-      : imageCount > 0
-      ? Array.from({ length: Math.min(imageCount, 3) }, (_, i) => `${topic} illustration ${i + 1}`)
-      : [];
+    // Генерируем статью из шаблона
+    const generated = generateArticleFromTemplate(params);
 
     // Вставляем картинки в контент
-    if (imageDescriptions.length > 0) {
-      content = injectImagesIntoContent(content, imageDescriptions);
+    let content = generated.content;
+    if (generated.imageDescriptions.length > 0) {
+      content = injectImagesIntoContent(content, generated.imageDescriptions);
     }
 
     const wordCount = content.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length;
@@ -174,17 +194,17 @@ ${imageCount > 0 ? `ИЗОБРАЖЕНИЯ: [${imageCount} описаний на
 
     res.status(200).json({
       id: Date.now(),
-      title,
-      seoTitle,
-      metaDescription,
-      excerpt,
+      title: generated.title,
+      seoTitle: generated.seoTitle,
+      metaDescription: generated.metaDescription,
+      excerpt: generated.excerpt,
       content,
-      imageDescriptions,
+      imageDescriptions: generated.imageDescriptions,
       wordCount,
       readingTime,
-      keywords,
-      category,
-      articleType,
+      keywords: params.keywords || [],
+      category: params.category,
+      articleType: params.articleType,
       createdAt: new Date().toISOString(),
     });
   } catch (error) {
