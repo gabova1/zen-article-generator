@@ -26,4 +26,6 @@ export interface GenerateArticleRequest {
   tone?: GenerateArticleRequestTone;
   /** Approximate article length */
   length?: GenerateArticleRequestLength;
+  /** Number of images to generate (0-5) */
+  imageCount?: number;
 }
