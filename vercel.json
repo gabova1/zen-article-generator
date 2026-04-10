@@ -4,13 +4,9 @@
   "devCommand": "cd artifacts/dzen-generator && PORT=3000 BASE_PATH=/ pnpm run dev",
   "installCommand": "pnpm install",
   "framework": null,
-  "env": {
-    "OPENROUTER_API_KEY": "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"
-  },
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs20.x"
     }
-  ]
+  }
 }
