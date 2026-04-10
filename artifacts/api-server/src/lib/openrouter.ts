@@ -87,6 +87,7 @@ export interface GenerateArticleOptions {
   targetAudience?: string;
   tone?: string;
   length?: string;
+  imageCount?: number;
 }
 
 const ARTICLE_TYPE_LABELS: Record<string, string> = {
@@ -170,6 +171,7 @@ export async function generateDzenArticle(options: GenerateArticleOptions) {
     targetAudience,
     tone,
     length = "medium",
+    imageCount = 3,
   } = options;
 
   const typeLabel = ARTICLE_TYPE_LABELS[articleType] || articleType;
@@ -202,12 +204,12 @@ export async function generateDzenArticle(options: GenerateArticleOptions) {
   "metaDescription": "Мета-описание (120-160 символов)",
   "excerpt": "Краткое вступление статьи (2-3 предложения)",
   "content": "Полный текст статьи в HTML формате",
-  "imageDescriptions": ["Описание для изображения 1 на английском языке", "Описание для изображения 2 на английском языке", "Описание для изображения 3 на английском языке"]
+  "imageDescriptions": [${imageCount > 0 ? `"Описание для изображения 1 на английском языке"${imageCount > 1 ? ', "Описание для изображения 2 на английском языке"' : ''}${imageCount > 2 ? ', "Описание для изображения 3 на английском языке"' : ''}` : ''}]
 }
 
 HTML контент должен использовать: h2, h3, p, ul, ol, li, strong, em, blockquote, a (для ссылок).
 НЕ включай html, head, body теги — только содержимое статьи.
-ВАЖНО: imageDescriptions должны быть на английском языке — они используются для генерации изображений через AI.`;
+${imageCount > 0 ? 'ВАЖНО: imageDescriptions должны быть на английском языке — они используются для генерации изображений через AI.' : 'ВАЖНО: imageDescriptions должен быть пустым массивом, так как пользователь не хочет картинки.'}`;
 
   const userPrompt = `Напиши ${typeLabel} для Яндекс Дзен на тему: "${topic}"
 
@@ -226,7 +228,7 @@ ${productSection}
 5. Если это обзор товара — детальное описание преимуществ и недостатков, с ссылкой на покупку
 6. Если есть ключевые слова — органично вписать их в текст
 7. Призыв к действию в конце
-8. 2-3 описания изображений на английском языке для AI-генерации
+${imageCount > 0 ? `8. ${imageCount} ${imageCount === 1 ? 'описание изображения' : imageCount < 5 ? 'описания изображений' : 'описаний изображений'} на английском языке для AI-генерации` : '8. БЕЗ изображений (imageDescriptions должен быть пустым массивом)'}
 
 Верни только JSON объект, без дополнительного текста.`;
 

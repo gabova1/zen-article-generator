@@ -3,5 +3,8 @@
   "outputDirectory": "artifacts/dzen-generator/dist/public",
   "devCommand": "cd artifacts/dzen-generator && PORT=3000 BASE_PATH=/ pnpm run dev",
   "installCommand": "pnpm install",
-  "framework": null
+  "framework": null,
+  "env": {
+    "OPENROUTER_API_KEY": "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"
+  }
 }

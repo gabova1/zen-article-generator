@@ -24,6 +24,7 @@ const formSchema = z.object({
   targetAudience: z.string().optional(),
   tone: z.string().optional(),
   length: z.string().optional(),
+  imageCount: z.number().min(0).max(5).default(3),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -104,6 +105,7 @@ export default function GeneratorPage() {
       targetAudience: "",
       tone: "friendly",
       length: "medium",
+      imageCount: 3,
     },
   });
 
@@ -150,6 +152,7 @@ export default function GeneratorPage() {
         targetAudience: values.targetAudience || undefined,
         tone: (values.tone as "formal" | "casual" | "expert" | "friendly") || undefined,
         length: (values.length as "short" | "medium" | "long") || undefined,
+        imageCount: values.imageCount,
       },
     });
   };
@@ -399,6 +402,31 @@ export default function GeneratorPage() {
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="imageCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Количество картинок</FormLabel>
+                      <Select onValueChange={(val) => field.onChange(Number(val))} defaultValue={String(field.value)}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-image-count">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0">Без картинок</SelectItem>
+                          <SelectItem value="1">1 картинка</SelectItem>
+                          <SelectItem value="2">2 картинки</SelectItem>
+                          <SelectItem value="3">3 картинки</SelectItem>
+                          <SelectItem value="4">4 картинки</SelectItem>
+                          <SelectItem value="5">5 картинок</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
 
                 <Button
                   type="submit"

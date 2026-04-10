@@ -208,6 +208,12 @@ components:
           type: string
           enum: [short, medium, long]
           description: Approximate article length
+        imageCount:
+          type: integer
+          minimum: 0
+          maximum: 5
+          default: 3
+          description: Number of images to generate (0-5)
       required:
         - topic
         - category
