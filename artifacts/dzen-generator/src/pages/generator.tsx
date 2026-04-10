@@ -136,7 +136,17 @@ export default function GeneratorPage() {
   };
 
   const copyToClipboard = async (text: string, type: string) => {
-    await navigator.clipboard.writeText(text);
+    if (type === "html") {
+      // Копируем HTML как rich text для вставки в Дзен с форматированием
+      const blob = new Blob([text], { type: "text/html" });
+      const clipboardItem = new ClipboardItem({
+        "text/html": blob,
+        "text/plain": new Blob([text], { type: "text/plain" })
+      });
+      await navigator.clipboard.write([clipboardItem]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
     setCopiedContent(type);
     toast({ title: "Скопировано!" });
     setTimeout(() => setCopiedContent(null), 2000);
