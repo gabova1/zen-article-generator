@@ -18,3 +18,20 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[[ports]]
+localPort = 24308
+externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+OPENROUTER_API_KEY = "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"

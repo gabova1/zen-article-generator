@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Yandex Zen Article Generator
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: articles
+    description: Article generation and management
 paths:
   /healthz:
     get:
@@ -24,6 +26,146 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /articles/generate:
+    post:
+      operationId: generateArticle
+      tags: [articles]
+      summary: Generate a Yandex Zen article
+      description: Generate a high-quality, SEO-optimized article for Yandex Zen using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateArticleRequest"
+      responses:
+        "200":
+          description: Generated article
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedArticle"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /articles:
+    get:
+      operationId: listArticles
+      tags: [articles]
+      summary: List all saved articles
+      description: Returns paginated list of previously generated articles
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: List of articles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleListResponse"
+
+  /articles/{id}:
+    get:
+      operationId: getArticle
+      tags: [articles]
+      summary: Get article by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Article details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedArticle"
+        "404":
+          description: Article not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: deleteArticle
+      tags: [articles]
+      summary: Delete an article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Article not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /articles/{id}/save:
+    post:
+      operationId: saveArticle
+      tags: [articles]
+      summary: Save a generated article to history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /articles/stats:
+    get:
+      operationId: getArticleStats
+      tags: [articles]
+      summary: Get article generation statistics
+      description: Returns stats about generated articles (count by category, avg length, etc.)
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +176,214 @@ components:
       required:
         - status
 
+    GenerateArticleRequest:
+      type: object
+      properties:
+        topic:
+          type: string
+          description: The main topic or title of the article
+        category:
+          type: string
+          description: Category of the article (e.g. lifestyle, tech, products, travel)
+        keywords:
+          type: array
+          items:
+            type: string
+          description: SEO keywords to include
+        articleType:
+          type: string
+          enum: [review, guide, listicle, news, opinion]
+          description: Type of article to generate
+        productUrl:
+          type: string
+          description: Product URL to include as affiliate link (optional)
+        targetAudience:
+          type: string
+          description: Target audience description
+        tone:
+          type: string
+          enum: [formal, casual, expert, friendly]
+          description: Writing tone
+        length:
+          type: string
+          enum: [short, medium, long]
+          description: Approximate article length
+      required:
+        - topic
+        - category
+        - articleType
+
+    GeneratedArticle:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+          description: HTML content of the article
+        excerpt:
+          type: string
+          description: Short excerpt/lead paragraph
+        seoTitle:
+          type: string
+        metaDescription:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        articleType:
+          type: string
+        imageDescriptions:
+          type: array
+          items:
+            type: string
+          description: Suggested image descriptions for the article
+        wordCount:
+          type: integer
+        readingTime:
+          type: integer
+          description: Estimated reading time in minutes
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - content
+        - excerpt
+        - seoTitle
+        - metaDescription
+        - keywords
+        - category
+        - articleType
+        - imageDescriptions
+        - wordCount
+        - readingTime
+        - createdAt
+
+    SavedArticle:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        excerpt:
+          type: string
+        seoTitle:
+          type: string
+        metaDescription:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        articleType:
+          type: string
+        imageDescriptions:
+          type: array
+          items:
+            type: string
+        wordCount:
+          type: integer
+        readingTime:
+          type: integer
+        topic:
+          type: string
+        productUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - content
+        - excerpt
+        - seoTitle
+        - metaDescription
+        - keywords
+        - category
+        - articleType
+        - imageDescriptions
+        - wordCount
+        - readingTime
+        - topic
+        - createdAt
+
+    ArticleListResponse:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedArticle"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+        - articles
+        - total
+        - page
+        - limit
+        - totalPages
+
+    ArticleStats:
+      type: object
+      properties:
+        totalArticles:
+          type: integer
+        byCategory:
+          type: object
+          additionalProperties:
+            type: integer
+        byType:
+          type: object
+          additionalProperties:
+            type: integer
+        avgWordCount:
+          type: number
+        avgReadingTime:
+          type: number
+      required:
+        - totalArticles
+        - byCategory
+        - byType
+        - avgWordCount
+        - avgReadingTime
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
