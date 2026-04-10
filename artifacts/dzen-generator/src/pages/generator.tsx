@@ -493,17 +493,28 @@ export default function GeneratorPage() {
             {article.imageDescriptions.length > 0 && (
               <Card className="border-border">
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Рекомендуемые изображения</CardTitle>
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Сгенерированные изображения</CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  <ul className="space-y-2">
-                    {article.imageDescriptions.map((desc, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-foreground" data-testid={`text-image-desc-${i}`}>
-                        <span className="text-primary font-medium shrink-0">{i + 1}.</span>
-                        {desc}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {article.imageDescriptions.map((desc, i) => {
+                      const prompt = encodeURIComponent(`${desc}, high quality, professional photography, photorealistic, vibrant colors`);
+                      const url = `https://image.pollinations.ai/prompt/${prompt}?width=600&height=380&nologo=true&seed=${i + 1}`;
+                      return (
+                        <div key={i} className="rounded-lg overflow-hidden border border-border bg-muted" data-testid={`image-preview-${i}`}>
+                          <div className="relative aspect-video bg-muted flex items-center justify-center">
+                            <img
+                              src={url}
+                              alt={desc}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground p-2 leading-snug">{desc}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             )}

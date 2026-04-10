@@ -110,6 +110,56 @@ const LENGTH_GUIDES: Record<string, string> = {
   long: "около 3000-5000 слов",
 };
 
+function buildImageUrl(description: string, width = 1200, height = 630): string {
+  const prompt = encodeURIComponent(
+    `${description}, high quality, professional photography, photorealistic, vibrant colors`
+  );
+  return `https://image.pollinations.ai/prompt/${prompt}?width=${width}&height=${height}&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+}
+
+function injectImagesIntoContent(html: string, imageDescriptions: string[]): string {
+  if (!imageDescriptions || imageDescriptions.length === 0) return html;
+
+  const images = imageDescriptions.slice(0, 3);
+  const h2Regex = /<h2[^>]*>/gi;
+  const matches: number[] = [];
+
+  let match;
+  while ((match = h2Regex.exec(html)) !== null) {
+    matches.push(match.index);
+  }
+
+  if (matches.length === 0) {
+    const heroImg = `<figure class="article-image article-image--hero">
+  <img src="${buildImageUrl(images[0])}" alt="${images[0]}" loading="lazy" style="width:100%;border-radius:12px;margin:16px 0;" />
+  <figcaption style="text-align:center;color:#888;font-size:0.85em;margin-top:8px;">${images[0]}</figcaption>
+</figure>`;
+    return heroImg + "\n" + html;
+  }
+
+  let result = html;
+  let offset = 0;
+
+  for (let i = 0; i < Math.min(images.length, matches.length); i++) {
+    const insertPos = (i === 0) ? 0 : matches[Math.floor(matches.length / images.length * i)] + offset;
+    const imgHtml = `\n<figure class="article-image">
+  <img src="${buildImageUrl(images[i])}" alt="${images[i]}" loading="lazy" style="width:100%;border-radius:12px;margin:24px 0;" />
+  <figcaption style="text-align:center;color:#888;font-size:0.85em;margin-top:8px;">${images[i]}</figcaption>
+</figure>\n`;
+
+    if (i === 0) {
+      result = imgHtml + result;
+      offset += imgHtml.length;
+    } else {
+      const pos = matches[Math.floor(matches.length / images.length * i)] + offset;
+      result = result.slice(0, pos) + imgHtml + result.slice(pos);
+      offset += imgHtml.length;
+    }
+  }
+
+  return result;
+}
+
 export async function generateDzenArticle(options: GenerateArticleOptions) {
   const {
     topic,
@@ -152,11 +202,12 @@ export async function generateDzenArticle(options: GenerateArticleOptions) {
   "metaDescription": "Мета-описание (120-160 символов)",
   "excerpt": "Краткое вступление статьи (2-3 предложения)",
   "content": "Полный текст статьи в HTML формате",
-  "imageDescriptions": ["Описание изображения 1", "Описание изображения 2", "Описание изображения 3"]
+  "imageDescriptions": ["Описание для изображения 1 на английском языке", "Описание для изображения 2 на английском языке", "Описание для изображения 3 на английском языке"]
 }
 
 HTML контент должен использовать: h2, h3, p, ul, ol, li, strong, em, blockquote, a (для ссылок).
-НЕ включай html, head, body теги — только содержимое статьи.`;
+НЕ включай html, head, body теги — только содержимое статьи.
+ВАЖНО: imageDescriptions должны быть на английском языке — они используются для генерации изображений через AI.`;
 
   const userPrompt = `Напиши ${typeLabel} для Яндекс Дзен на тему: "${topic}"
 
@@ -175,7 +226,7 @@ ${productSection}
 5. Если это обзор товара — детальное описание преимуществ и недостатков, с ссылкой на покупку
 6. Если есть ключевые слова — органично вписать их в текст
 7. Призыв к действию в конце
-8. Рекомендации по 2-3 изображениям, которые усилят статью
+8. 2-3 описания изображений на английском языке для AI-генерации
 
 Верни только JSON объект, без дополнительного текста.`;
 
@@ -201,7 +252,10 @@ ${productSection}
     throw new Error("Failed to parse AI response as JSON");
   }
 
-  const wordCount = parsed.content.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length;
+  const imageDescriptions = parsed.imageDescriptions || [];
+  const contentWithImages = injectImagesIntoContent(parsed.content, imageDescriptions);
+
+  const wordCount = contentWithImages.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length;
   const readingTime = Math.ceil(wordCount / 200);
 
   return {
@@ -209,8 +263,8 @@ ${productSection}
     seoTitle: parsed.seoTitle,
     metaDescription: parsed.metaDescription,
     excerpt: parsed.excerpt,
-    content: parsed.content,
-    imageDescriptions: parsed.imageDescriptions || [],
+    content: contentWithImages,
+    imageDescriptions,
     wordCount,
     readingTime,
     keywords,
